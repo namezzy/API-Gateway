@@ -1,5 +1,5 @@
 # 使用官方的Go镜像作为构建环境
-FROM golang:1.21-alpine AS builder
+FROM golang:1.21-alpine AS go-builder
 
 # 设置工作目录
 WORKDIR /app
@@ -19,6 +19,14 @@ COPY . .
 # 构建应用
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o gateway cmd/gateway/main.go
 
+# ---------- Frontend build ----------
+FROM node:20-alpine AS fe-builder
+WORKDIR /fe
+COPY frontend/package.json frontend/package-lock.json* frontend/pnpm-lock.yaml* frontend/yarn.lock* ./ 2>/dev/null || true
+RUN npm install --no-audit --no-fund || true
+COPY frontend/ .
+RUN npm run build || echo "Frontend build failed (dependencies may be missing)"
+
 # 使用alpine作为最终镜像
 FROM alpine:latest
 
@@ -28,10 +36,13 @@ RUN apk --no-cache add ca-certificates tzdata
 WORKDIR /root/
 
 # 从构建阶段复制二进制文件
-COPY --from=builder /app/gateway .
+COPY --from=go-builder /app/gateway .
 
 # 复制配置文件
-COPY --from=builder /app/configs ./configs
+COPY --from=go-builder /app/configs ./configs
+
+# 前端静态文件 (如果构建成功)
+COPY --from=fe-builder /fe/dist ./public 2>/dev/null || true
 
 # 创建日志目录
 RUN mkdir -p logs

@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	"api-gateway/internal/auth"
@@ -177,6 +178,19 @@ func (g *Gateway) initializeRoutes() {
 
 	// 代理路由
 	g.setupProxyRoutes()
+
+	// 前端静态资源 (如果存在 public 目录)
+	if _, err := os.Stat("public"); err == nil {
+		g.router.Static("/", "public")
+		// SPA fallback: 未匹配到API时返回 index.html
+		g.router.NoRoute(func(c *gin.Context) {
+			if strings.HasPrefix(c.Request.URL.Path, "/api") || strings.HasPrefix(c.Request.URL.Path, "/auth") || strings.HasPrefix(c.Request.URL.Path, "/admin") || strings.HasPrefix(c.Request.URL.Path, "/metrics") {
+				c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+				return
+			}
+			c.File("public/index.html")
+		})
+	}
 }
 
 // setupProxyRoutes 设置代理路由

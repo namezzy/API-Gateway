@@ -1,12 +1,22 @@
-import { Paper, Typography, Stack, Box } from '@mui/material';
+import { Paper, Typography, Stack, Box, TextField, Button, CircularProgress } from '@mui/material';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+import { api } from '../lib/http';
 import { LineChart, Line, XAxis, YAxis, Tooltip as RTooltip, ResponsiveContainer, Legend } from 'recharts';
 
 interface MetricPoint { ts: number; requests: number; errors: number; }
 
+interface PromResult {
+  metric: Record<string, string>;
+  value: [number, string];
+}
+
 export default function MetricsPage() {
   const [data, setData] = useState<MetricPoint[]>([]);
+  const [query, setQuery] = useState('up');
+  const [querying, setQuerying] = useState(false);
+  const [results, setResults] = useState<PromResult[] | null>(null);
+  const [qErr, setQErr] = useState<string>('');
 
   useEffect(() => {
     const id = setInterval(async () => {
@@ -41,6 +51,35 @@ export default function MetricsPage() {
             </LineChart>
           </ResponsiveContainer>
         </Box>
+      </Paper>
+      <Paper sx={{ p:2 }}>
+        <Stack direction={{ xs:'column', sm:'row' }} spacing={2} alignItems="center" mb={2}>
+          <TextField fullWidth label="PromQL 查询" value={query} onChange={e=>setQuery(e.target.value)} size="small" />
+          <Button variant="contained" disabled={querying} onClick={async ()=>{
+            setQuerying(true); setQErr('');
+            try {
+              const res = await api.get('http://localhost:9091/api/v1/query', { params: { query } });
+              if (res.data.status === 'success') {
+                setResults(res.data.data.result as PromResult[]);
+              } else {
+                setQErr(JSON.stringify(res.data));
+              }
+            } catch (e:any) {
+              setQErr(e.message || '查询失败');
+            } finally { setQuerying(false); }
+          }}>{querying ? <CircularProgress size={20} /> : '执行'}</Button>
+        </Stack>
+        {qErr && <Typography color="error" variant="body2" mb={1}>{qErr}</Typography>}
+        {results && results.length === 0 && <Typography variant="body2" sx={{ opacity:.7 }}>无结果</Typography>}
+        <Stack spacing={1} maxHeight={240} sx={{ overflow:'auto' }}>
+          {results && results.map((r,i)=>{
+            const val = parseFloat(r.value[1]);
+            return <Box key={i} sx={{ fontFamily:'monospace', fontSize:13, display:'flex', justifyContent:'space-between', border:'1px solid', borderColor:'divider', borderRadius:1, p:1 }}>
+              <span>{Object.entries(r.metric).map(([k,v])=>`${k}="${v}"`).join(', ')}</span>
+              <b>{val}</b>
+            </Box>;
+          })}
+        </Stack>
       </Paper>
     </Stack>
   );
