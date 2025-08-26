@@ -1,0 +1,45 @@
+### Go ###
+bin/
+build/
+dist/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+coverage*.txt
+coverage/*.out
+profile*.prof
+
+# Modules
+vendor/
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+
+# Logs & data
+logs/
+*.log
+*.pid
+*.db
+
+# Secrets (adjust as needed)
+*.pem
+*.key
+*.crt
+config.local.yaml
+
+# Docker artifacts
+*.tar
+
+# Temporary
+tmp/
+*.tmp
+*.bak
+
+# Node (if any frontend assets later)
+node_modules/

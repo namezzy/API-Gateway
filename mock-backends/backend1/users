@@ -1,0 +1,18 @@
+[
+  {
+    "id": 1,
+    "username": "john_doe",
+    "email": "john@example.com",
+    "name": "John Doe",
+    "active": true,
+    "created_at": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": 2,
+    "username": "jane_smith",
+    "email": "jane@example.com",
+    "name": "Jane Smith",
+    "active": true,
+    "created_at": "2024-01-02T00:00:00Z"
+  }
+]

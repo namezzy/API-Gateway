@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1,
+    "name": "Laptop Pro",
+    "category": "Electronics",
+    "price": 1299.99,
+    "stock": 50,
+    "description": "High-performance laptop for professionals"
+  },
+  {
+    "id": 2,
+    "name": "Wireless Headphones",
+    "category": "Electronics", 
+    "price": 299.99,
+    "stock": 100,
+    "description": "Premium noise-cancelling headphones"
+  },
+  {
+    "id": 3,
+    "name": "Smart Watch",
+    "category": "Wearables",
+    "price": 399.99,
+    "stock": 75,
+    "description": "Advanced fitness and health tracking"
+  }
+]
