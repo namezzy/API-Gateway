@@ -4,6 +4,9 @@
   <p>
     <strong>Go 1.21+</strong> · 可插拔中间件 · 优雅关停 · Prometheus 指标 · JWT 授权 · 多算法负载均衡
   </p>
+  <p>
+    <a href="README.en.md">English Version</a> | 中文版
+  </p>
 </div>
 
 ---
@@ -22,6 +25,9 @@
 | 安全 | 安全头部 / CORS / 限制 | HSTS / CSP / X-Frame / X-Content-Type |
 | 观测 | 结构化日志 | Logrus JSON，可扩展收集链路ID |
 | 可运维性 | 优雅关停 / 配置解耦 | 支持 context 关闭、YAML 配置化 |
+| 前端控制台 | React Dashboard | 登录 / 后端状态 / 指标曲线 / PromQL / 主题自定义 |
+
+> 新增：令牌自动刷新、前端多阶段打包、PromQL 查询、主题品牌色动态设置、CI 前端构建。
 
 ---
 
@@ -82,6 +88,7 @@ go run ./cmd/gateway -config configs/config.yaml
 | GET /admin/status | 网关状态（需认证） |
 | GET /admin/backends | 后端健康及连接情况（需认证） |
 | GET /metrics | Prometheus 指标 |
+| (Prometheus) /api/v1/query | PromQL 查询（前端直接调用 9091） |
 
 ### 5. 简单测试
 ```bash
@@ -111,13 +118,14 @@ curl -s -X POST localhost:8080/auth/login -d '{"username":"admin","password":"pa
 ├── scripts/                  # 演示脚本
 ├── mock-backends/            # 模拟后端资源 (可扩展)
 ├── Dockerfile                # 容器构建
-├── docker-compose.yml        # 本地编排 (可含 Redis / 后端 / Grafana)
+├── docker-compose.yml        # 本地编排 (可含 Redis / 后端 / Grafana / Prometheus)
+├── frontend/                 # React + Vite 前端面板
 └── Makefile                  # 常用任务 (build / run / lint / test)
 ```
 
 ---
 
-## 🔐 认证与授权
+## 🔐 认证与授权 & 自动刷新
 1. 登录: `POST /auth/login` 返回 `access_token` 与 `refresh_token`
 2. 访问受保护 API:
    ```http
@@ -125,6 +133,14 @@ curl -s -X POST localhost:8080/auth/login -d '{"username":"admin","password":"pa
    ```
 3. 刷新令牌: `POST /auth/refresh`
 4. 角色策略: Claims 中 `roles` 可用于网关扩展 RBAC
+5. 自动刷新: 前端解析 access token 的 `exp`，在到期前 60s 调用 `/auth/refresh` 获取新 access，失败则清除登录状态（详见 `frontend/src/context/AuthContext.tsx`）
+
+刷新流程：
+```
+login -> 保存 { access, refresh, expiresAt }
+      ↓ 定时器 (exp - 60s)
+    refresh (保持 refresh 不变) -> 更新 access + expiresAt
+```
 
 ---
 
@@ -171,6 +187,7 @@ Key 维度：`clientIP + userID + path`
 | cache_requests_total | 缓存命中/未命中 |
 | active_connections | 当前活跃连接 |
 | auth_requests_total | 登录成功/失败 |
+| backend_health_status | 后端健康状态 (0/1) |
 
 ---
 
@@ -216,7 +233,15 @@ make test         # 运行测试(如后续补充)
 
 ---
 
-## 🐳 Docker / Compose
+## 🐳 Docker / Compose & 多阶段前端集成
+`Dockerfile` 包含：
+1. Go 编译阶段 (go-builder)
+2. 前端构建阶段 (fe-builder) -> 生成 `frontend/dist`
+3. 最终 alpine 镜像复制二进制与静态资源至 `/public`
+
+网关启动后：访问 `http://<host>:8080/` 即加载前端 SPA（若存在）。
+
+如仅需后端，可删除前端阶段。
 ```bash
 docker build -t api-gateway:latest .
 docker run -p 8080:8080 -p 9090:9090 api-gateway:latest
@@ -225,6 +250,33 @@ docker compose up -d
 ```
 
 ---
+
+## 🌐 前端 Dashboard 功能摘要
+路径：`frontend/` (详细见其 README)
+
+| 功能 | 描述 |
+|------|------|
+| 登录 / 退出 | JWT + refresh 自动续期 |
+| 后端服务列表 | 权重 / 健康 / 连接数展示 |
+| 网关概览 | 核心状态、缓存/速率统计（可扩展） |
+| 指标趋势 | 基于 /metrics 文本简易解析 + Recharts 绘图 |
+| PromQL 查询 | 直接调用 Prometheus HTTP API 执行即时查询 |
+| 主题切换 | Light/Dark + 品牌主色/次色自定义弹窗 |
+| 全局通知 | Axios 拦截 + Snackbar 统一提示 |
+| Token 刷新 | 提前 60s 自动刷新 access token |
+
+## ⚙️ CI (GitHub Actions)
+Workflow: `.github/workflows/ci.yml`
+
+Jobs：
+| Job | 内容 |
+|-----|------|
+| build-test | Go 依赖、测试、覆盖率 artifact |
+| lint | golangci-lint 静态检查 |
+| security | go vet + govulncheck |
+| frontend | Node 20 安装依赖、ESLint、Vite build、上传 dist |
+
+可扩展：SAST、镜像扫描、依赖缓存、版本发布。
 
 ## 🔍 Roadmap (可演进)
 - [ ] OpenAPI / 自动文档

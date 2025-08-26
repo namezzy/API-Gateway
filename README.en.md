@@ -2,6 +2,9 @@
   <h1>API Gateway (Go)</h1>
   <p>Production‑ready, modular, extensible API gateway: Routing · Load Balancing · Auth · Rate Limiting · Caching · Observability · Security</p>
   <p><strong>Go 1.21+</strong> · Pluggable Middleware · Graceful Shutdown · Prometheus Metrics · JWT · Multiple LB Algorithms</p>
+  <p>
+    English Version | <a href="README.md">中文版</a>
+  </p>
 </div>
 
 ---
@@ -20,6 +23,9 @@
 | Security | Headers / CORS / Limits | CSP / HSTS / Frame / Content-Type |
 | Logging | Structured JSON | Logrus abstraction |
 | Ops | Graceful shutdown | Context‑driven lifecycle |
+| Frontend | React Dashboard | Auth / Backends / Metrics / PromQL / Theme |
+
+> Added: automatic token refresh, PromQL querying, theme brand colors, multi-stage docker build bundling SPA, CI frontend job.
 
 ---
 
@@ -72,9 +78,25 @@ openapi/      # OpenAPI spec
 scripts/      # Demo scripts
 monitoring/   # Prometheus/Grafana
 examples/     # Sample backend services
+frontend/     # React + Vite dashboard
 ```
 
 ---
+
+## Auth & Token Refresh
+
+1. Login: `POST /auth/login` => access + refresh
+2. Use protected routes with `Authorization: Bearer <access>`
+3. Refresh: `POST /auth/refresh`
+4. Roles inside `claims.roles` for RBAC extensions
+5. Frontend decodes `exp` and schedules refresh 60s before expiry (see `frontend/src/context/AuthContext.tsx`).
+
+Refresh flow:
+```
+login -> store { access, refresh, expiresAt }
+      ↓ timer (exp - 60s)
+    /auth/refresh -> update access (refresh unchanged)
+```
 
 ## Extending
 Add a middleware:
@@ -101,6 +123,43 @@ Add a load balancer: implement the `LoadBalancer` interface then register via fa
 | active_connections | Current active connections |
 
 ---
+
+## Frontend Dashboard Summary
+Directory: `frontend/` (see its README)
+
+| Feature | Description |
+|---------|-------------|
+| Auth / Logout | JWT + automatic refresh |
+| Backends Table | Weight / health / connections |
+| Overview | Gateway status & stats (extensible) |
+| Metrics Trend | Basic parsing of /metrics -> Recharts |
+| PromQL Query | Direct Prometheus HTTP API query |
+| Theme Customization | Light/Dark + brand primary/secondary picker |
+| Snackbar Notifications | Axios interceptor + queue |
+| Token Refresh | 60s pre-expiry refresh scheduling |
+
+## CI (GitHub Actions)
+Workflow: `.github/workflows/ci.yml`
+
+Jobs:
+| Job | Purpose |
+|-----|---------|
+| build-test | Go deps, tests, coverage artifact |
+| lint | golangci-lint |
+| security | go vet + govulncheck |
+| frontend | Node 20 install, ESLint, Vite build, upload dist |
+
+Future: SAST, image scan, release automation.
+
+## Docker / Compose & Multi-stage Frontend
+`Dockerfile` stages:
+1. go-builder (build gateway)
+2. fe-builder (Vite build -> `frontend/dist`)
+3. final alpine (copy binary + static to `/public`)
+
+Gateway serves SPA (`/public`) with fallback to `index.html`.
+
+Remove the frontend stage if API-only.
 
 ## Roadmap
 - OpenTelemetry tracing
