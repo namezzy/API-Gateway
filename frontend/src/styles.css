@@ -1,0 +1,5 @@
+html, body, #root { height:100%; margin:0; padding:0; }
+body { font-family: Inter, Roboto, Helvetica, Arial, sans-serif; background: #0f1115; }
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-thumb { background: #444; border-radius: 5px; }
+::-webkit-scrollbar-thumb:hover { background: #666; }
