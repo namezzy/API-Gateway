@@ -121,6 +121,20 @@ demo: ## 运行演示脚本
 	@echo "$(BLUE)运行API Gateway演示...$(RESET)"
 	./scripts/demo.sh
 
+compose-demo: ## 一键Compose演示 (含登录/指标输出)
+	@echo "$(BLUE)启动Compose演示脚本...$(RESET)"
+	bash scripts/compose-demo.sh
+
+openapi-validate: ## 验证 OpenAPI 规范 (需要安装 speccy 或 swagger-cli)
+	@echo "$(BLUE)验证 OpenAPI 规范...$(RESET)"
+	@if command -v swagger-cli >/dev/null 2>&1; then \
+		swagger-cli validate openapi/openapi.yaml; \
+	elif command -v speccy >/dev/null 2>&1; then \
+		speccy lint openapi/openapi.yaml; \
+	else \
+		echo "$(YELLOW)未找到 swagger-cli 或 speccy，跳过验证$(RESET)"; \
+	fi
+
 install-tools: ## 安装开发工具
 	@echo "$(BLUE)安装开发工具...$(RESET)"
 	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest

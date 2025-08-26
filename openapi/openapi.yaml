@@ -1,0 +1,61 @@
+openapi: 3.0.3
+info:
+  title: API Gateway Public API
+  version: 0.1.0
+  description: |
+    Placeholder OpenAPI specification for the API Gateway external/control endpoints.
+    Extend this file as you define stable upstream and admin APIs.
+servers:
+  - url: http://localhost:8080
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+  /auth/login:
+    post:
+      summary: Login and obtain tokens
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username: { type: string }
+                password: { type: string }
+      responses:
+        '200':
+          description: Token pair
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token: { type: string }
+                  refresh_token: { type: string }
+                  token_type: { type: string }
+                  expires_in: { type: integer }
+  /admin/status:
+    get:
+      summary: Gateway status (protected)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Status payload
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
