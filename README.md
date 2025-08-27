@@ -1,31 +1,27 @@
 <div align="center">
-  <h1>API Gateway （Go 高性能网关）</h1>
-  <p>生产级、模块化、可扩展的 API 网关：路由 | 负载均衡 | 认证 | 速率限制 | 缓存 | 监控 | 安全</p>
-  <p>
-    <strong>Go 1.21+</strong> · 可插拔中间件 · 优雅关停 · Prometheus 指标 · JWT 授权 · 多算法负载均衡
-  </p>
-  <p>
-    <a href="README.en.md">English Version</a> | 中文版
-  </p>
+  <h1>API Gateway (Go)</h1>
+  <p>Production‑ready, modular, extensible API gateway: Routing · Load Balancing · Auth · Rate Limiting · Caching · Observability · Security</p>
+  <p><strong>Go 1.21+</strong> · Pluggable Middleware · Graceful Shutdown · Prometheus Metrics · JWT · Multiple LB Algorithms</p>
+  <p>English | <a href="README.zh.md">中文</a></p>
 </div>
 
 ---
 
-## ✨ 核心能力概览
+## Features
 
-| 领域 | 能力 | 说明 |
-|------|------|------|
-| 路由 | Path / Method / Group | 基于前缀与通配处理，支持分组中间件 |
-| 负载均衡 | round_robin / weighted_round / least_conn / ip_hash / random | 可按路由独立配置 |
-| 认证授权 | JWT + 角色 | 登录/刷新/登出，角色信息写入 Claims |
-| 速率限制 | 令牌桶 + 预留滑动/固定窗口 | 支持路由级覆盖，全局中间件默认限制 |
-| 缓存 | 内存 / Redis | 路由级可选缓存，Cache-Control 友好 |
-| 健康检查 | 后端 + 系统依赖 | 定期探测 /admin/backends 查看状态 |
-| 监控 | Prometheus 指标 | HTTP/Backend/Cache/Rate/Auth/System 统一指标体系 |
-| 安全 | 安全头部 / CORS / 限制 | HSTS / CSP / X-Frame / X-Content-Type |
-| 观测 | 结构化日志 | Logrus JSON，可扩展收集链路ID |
-| 可运维性 | 优雅关停 / 配置解耦 | 支持 context 关闭、YAML 配置化 |
-| 前端控制台 | React Dashboard | 登录 / 后端状态 / 指标曲线 / PromQL / 主题自定义 |
+| Domain | Capability | Notes |
+|--------|-----------|-------|
+| Routing | Path / Method / Group | Prefix based, group middleware |
+| Load Balancing | round_robin / weighted_round / least_conn / ip_hash / random | Per‑route configuration |
+| Auth | JWT + roles | Login / refresh / logout demo |
+| Rate Limiting | Token bucket (+ future window strategies) | Per route override |
+| Cache | In‑Memory / Redis | Route‑level enable + TTL |
+| Health | Backend + system deps | Periodic probes |
+| Metrics | Prometheus | HTTP / Backend / Cache / Rate / Auth / System |
+| Security | Headers / CORS / Limits | CSP / HSTS / Frame / Content-Type |
+| Logging | Structured JSON | Logrus abstraction |
+| Ops | Graceful shutdown | Context lifecycle |
+| Frontend | React Dashboard | Auth / Backends / Metrics / PromQL / Theme |
 
 > 新增：令牌自动刷新、前端多阶段打包、PromQL 查询、主题品牌色动态设置、CI 前端构建。
 
