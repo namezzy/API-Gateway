@@ -23,21 +23,187 @@
 | Ops | Graceful shutdown | Context lifecycle |
 | Frontend | React Dashboard | Auth / Backends / Metrics / PromQL / Theme |
 
-> 新增：令牌自动刷新、前端多阶段打包、PromQL 查询、主题品牌色动态设置、CI 前端构建。
+> Added: automatic token refresh, PromQL querying, theme brand colors, multi-stage docker build bundling SPA, CI frontend job.
 
 ---
 
-## 🚀 快速上手
+## Quick Start
 
-### 1. 克隆与初始化
 ```bash
 git clone https://github.com/your-org/api-gateway.git
 cd api-gateway
-go mod tidy   # 如网络或 TLS 受限，可使用自建 GOPROXY
+go mod tidy
+go run ./cmd/gateway -config configs/config.yaml
 ```
 
-### 2. 配置文件 (`configs/config.yaml`)
-核心字段示例：
+Health check:
+```bash
+curl -s localhost:8080/health
+```
+
+Login:
+```bash
+curl -s -X POST localhost:8080/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"admin","password":"password123"}'
+```
+
+Metrics: `GET /metrics`
+
+---
+
+## Auth & Token Refresh
+
+1. Login: `POST /auth/login` => access + refresh
+2. Protected routes: `Authorization: Bearer <access>`
+3. Refresh: `POST /auth/refresh`
+4. Roles: claims.roles for RBAC extensions
+5. Frontend decodes `exp` and schedules refresh 60s before expiry.
+
+Flow:
+```
+login -> store { access, refresh, expiresAt }
+      ↓ timer (exp - 60s)
+   /auth/refresh -> update access (refresh unchanged)
+```
+
+---
+
+## Project Layout
+```
+internal/
+  auth/       # JWT + mock users
+  cache/      # Redis & memory cache
+  config/     # YAML config parsing
+  gateway/    # Core orchestration
+  healthcheck/# Backend & system health
+  loadbalancer# Algorithms
+  logger/     # Logging
+  metrics/    # Prometheus metrics
+  middleware/ # Middlewares
+  ratelimit/  # Limiter strategies
+cmd/gateway   # Entry point
+frontend/     # React + Vite dashboard
+```
+
+---
+
+## Load Balancing
+
+| Strategy | Use Case | Note |
+|----------|----------|------|
+| round_robin | Even backends | Sequential rotation |
+| weighted_round | Uneven capacity | Proportional weights |
+| least_conn | Varied concurrency | Choose least active |
+| ip_hash | Session stickiness | Deterministic by IP |
+| random | Simple distribution | Uniform random |
+
+---
+
+## Rate Limiting
+
+Token bucket global + per route override (future: sliding / fixed windows). Key: `clientIP + userID + path`.
+
+---
+
+## Caching
+
+| Level | Store | Note |
+|-------|-------|------|
+| Memory | in‑process | Fast, volatile |
+| Redis | external | Shared, TTL |
+
+Key pattern: `prefix:METHOD:/path:query`.
+
+---
+
+## Metrics (Prometheus)
+
+Examples: `http_requests_total`, `http_request_duration_seconds`, `backend_requests_total`, `backend_health_status`, `rate_limit_requests_total`, `cache_requests_total`, `active_connections`, `auth_requests_total`.
+
+---
+
+## Security
+
+HSTS, CSP, X-Frame-Options, X-Content-Type-Options, JWT expiry, rate limiting; extensible for mTLS / ACL / WAF.
+
+---
+
+## Extending
+
+Middleware skeleton:
+```go
+type MyMw struct{}
+func (m *MyMw) Name() string { return "my" }
+func (m *MyMw) Handle() gin.HandlerFunc { return func(c *gin.Context){ c.Next() } }
+```
+Implement `LoadBalancer` for new algorithms.
+
+---
+
+## Docker / Compose & Multi‑stage Frontend
+
+Dockerfile stages:
+1. Go build (go-builder)
+2. Frontend build (fe-builder, Vite)
+3. Final Alpine with binary + `/public` SPA (served with fallback).
+
+Remove stage 2 if API‑only.
+
+```bash
+docker build -t api-gateway:latest .
+docker run -p 8080:8080 -p 9090:9090 api-gateway:latest
+# or
+docker compose up -d
+```
+
+---
+
+## Frontend Dashboard
+
+| Feature | Description |
+|---------|-------------|
+| Auth / Refresh | JWT + auto renew (‑60s) |
+| Backends | Weight / health / connections |
+| Metrics Trend | Parse /metrics -> charts |
+| PromQL Query | Direct Prometheus HTTP API |
+| Theme | Dark/Light + brand colors picker |
+| Notifications | Axios + Snackbar queue |
+
+---
+
+## CI (GitHub Actions)
+
+Jobs: build-test (Go), lint, security (govulncheck), frontend (ESLint + build + dist artifact).
+
+---
+
+## Roadmap
+
+- OpenTelemetry tracing
+- Dynamic config (etcd / Consul)
+- Circuit breaking / retry
+- Canary routing
+- WebSocket / gRPC proxy
+- Advanced auth (OIDC / API Key / HMAC)
+
+---
+
+## License
+
+MIT
+
+---
+
+## Contributing
+
+PRs welcome – keep changes modular, documented, tested.
+
+---
+
+## Support
+
+For enterprise add‑ons (dynamic routing center, service discovery, distributed rate limiting, plugin system) extend this baseline.
 ```yaml
 server:
   host: 0.0.0.0
